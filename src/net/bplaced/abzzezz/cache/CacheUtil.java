@@ -29,7 +29,7 @@ public class CacheUtil extends HashMap<String, Object> {
             cacheDirectory.mkdirs();
         this.cache = new File(cacheDirectory, "cache.json");
         this.cacheConfig = new File(cacheDirectory, "cache_config.json");
-        this.cacheConfigMap = new JSONObject(Util.readFile(cacheConfig).map(JSONObject::new).orElse(new JSONObject()));
+        this.cacheConfigMap = Util.readFile(cacheConfig).map(JSONObject::new).orElse(new JSONObject());
     }
 
     /**
@@ -118,7 +118,6 @@ public class CacheUtil extends HashMap<String, Object> {
                 .filter(key -> Optional.ofNullable(expirationKeyMap.get(key))
                         .map(cache -> System.currentTimeMillis() - cache.getInsertTime() >= cache.getExpiration())
                         .orElse(true))
-                .collect(Collectors.toList())
                 .forEach(key -> {
                     expirationKeyMap.remove(key);
                     this.remove(key);
@@ -246,7 +245,11 @@ public class CacheUtil extends HashMap<String, Object> {
     }
 
     private static class Util {
-
+        /**
+         * Reads all the lines from a file
+         * @param file File to read from
+         * @return Optional with the read lines appended to each other
+         */
         public static Optional<String> readFile(final File file) {
             if (!file.exists()) return Optional.empty();
             final StringBuilder builder = new StringBuilder();
@@ -255,12 +258,17 @@ public class CacheUtil extends HashMap<String, Object> {
                 while ((line = bufferedReader.readLine()) != null) {
                     builder.append(line);
                 }
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 e.printStackTrace();
             }
             return Optional.of(builder.toString());
         }
 
+        /**
+         * Writes a string to a file
+         * @param file file to write to
+         * @param string the string to write to the file (does not append by default)
+         */
         public static void writeFile(final File file, final String string) {
             try (final FileOutputStream fileOutputStream = new FileOutputStream(file)) {
                 fileOutputStream.write(string.getBytes(StandardCharsets.UTF_8));
